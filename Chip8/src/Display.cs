@@ -13,6 +13,7 @@ namespace Chip8.src
         public const int DISPLAY_WIDTH = 64;
         public const int DISPLAY_HEIGHT = 32;
         public const int DISPLAY_REFRESH_RATE = 60;
+
         public bool[,] display = new bool[DISPLAY_HEIGHT, DISPLAY_WIDTH];
         public int scale = 8;
         public WriteableBitmap writeableImg;
@@ -35,8 +36,8 @@ namespace Chip8.src
                 string bits = Convert.ToString(sprite[i], 2).PadLeft(8, '0');
                 for (int j = 0; j < bits.Length; j++)
                 {
-                    int row = i + y;
-                    int col = j + x;
+                    int row = (i + y) % DISPLAY_HEIGHT;
+                    int col = (j + x) % DISPLAY_WIDTH;
                     bool bit = bits[j] == '1';
                     bool initialVal = display[row, col];
                     display[row, col] ^= bit;
@@ -50,12 +51,10 @@ namespace Chip8.src
 
         public void render()
         {
-            // Copies display buffer
             int[,] currentDisplay = new int[DISPLAY_HEIGHT, DISPLAY_WIDTH];
             for (int i = 0; i < DISPLAY_HEIGHT; i++) for (int j = 0; j < DISPLAY_WIDTH; j++) currentDisplay[i, j] = getColour(display[i, j]);
 
             this.writeableImg.Lock();
-
             for (int row = 0; row < imgHeight; row++)
             {
                 for (int column = 0; column < imgWidth; column++)
@@ -71,10 +70,10 @@ namespace Chip8.src
             writeableImg.Unlock();
         }
 
-        private Int32 getColour(bool colour)
+        private int getColour(bool colour)
         {
-            byte hex = (byte)(colour ? 0 : 255);
-            return Int32.Parse(Color.FromRgb(hex, hex, hex).ToString().Trim('#'), System.Globalization.NumberStyles.HexNumber);
+            byte hex = (byte)(colour ? 255 : 0);
+            return int.Parse(Color.FromRgb(hex, hex, hex).ToString().Trim('#'), System.Globalization.NumberStyles.HexNumber);
         }
 
         public void clear()

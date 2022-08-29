@@ -12,33 +12,44 @@ namespace Chip8
     public partial class MainWindow : Window
     {
         Timer renderLoopTimer;
-        Chip8.src.Chip8 chip8;
+        src.Display virtualDisplay;
+        src.Chip8 chip8;
+        src.Keyboard keyboard;
         private readonly CancellationTokenSource _shutDown = new CancellationTokenSource();
 
         public MainWindow()
         {
             InitializeComponent();
-            this.chip8 = new src.Chip8(display);
-            display.Source = this.chip8.display.writeableImg;
+
+            this.virtualDisplay = new src.Display();
+            this.keyboard = new src.Keyboard(this);
+            this.chip8 = new src.Chip8(virtualDisplay, keyboard);
+            display.Source = this.virtualDisplay.writeableImg;
+
+            this.Closed += (s, e) => this._shutDown.Cancel();
+
+            RunMainLoop();
+            renderLoopTimer = new Timer(17);
+            renderLoopTimer.Elapsed += new ElapsedEventHandler(RunRenderLoop);
+            renderLoopTimer.Start();
+        }
+
+        private void RunMainLoop()
+        {
             Task.Run(() =>
             {
                 while (true)
                 {
-                    chip8.loop();
-                    Task.Delay(1);
+                    chip8.Loop();
+                    Thread.Sleep(2);
                 }
             });
-
-            this.Closed += (s, e) => this._shutDown.Cancel();
-            renderLoopTimer = new Timer(17);
-            renderLoopTimer.Start();
-            renderLoopTimer.Elapsed += new ElapsedEventHandler(runRenderLoop);
         }
 
-        private void runRenderLoop(object? source, ElapsedEventArgs e)
+        private void RunRenderLoop(object? source, ElapsedEventArgs e)
         {
             if (!this._shutDown.IsCancellationRequested)
-                display.Dispatcher.Invoke(() => this.chip8.render());
+                display.Dispatcher.Invoke(() => this.virtualDisplay.render());
         }
     }
 }
